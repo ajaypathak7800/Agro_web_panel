@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Exports;
+
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Illuminate\Support\Collection;
+use App\Models\details;
+use App\Models\ExpertForm;
+
+class Expert implements FromCollection, WithHeadings
+{
+    /**
+     * @return \Illuminate\Support\Collection
+     */
+    public function collection()
+    {
+        // Fetching data from Details table where expert_id exists and hasConnectivity is true
+        $details = DB::table('fpo_details')
+            ->where('data', 'LIKE', '%"expert_id"%')
+            ->where('data', 'LIKE', '%"hasConnectivity"%')
+            ->distinct()
+            ->get();
+
+        // Mapping each detail to include related ExpertForm data
+        $detailsWithForms = $details->map(function ($detail) {
+            $data = json_decode($detail->data, true); // Decode JSON data as an associative array
+            $expertId = $data['expert_id'] ?? null;
+
+            // Finding ExpertForm data based on expert_id
+            $expertForm = DB::table('expert_forms')->find($expertId);
+
+            // Create an array with expert_id and hasConnectivity
+            $detailData = [];
+            if (isset($jsonColumnData['selectedExpert']) && isset($jsonColumnData['selectedExpert'])) {
+                $detailData = [
+                    'Selected Expert' => $expertForm ? $expertForm->selectedExpert : null,
+                    'Inspection Date' => $expertForm ? $expertForm->inspectionDate : null,
+                    'Selected IA' => $data['selectedIA'] ?? null,
+                    'Selected CBBO' => $data['selectedCbbo'] ?? null,
+                    'Selected State' => $data['selectedState'] ?? null,
+                    'Selected District' => $data['selectedDistrict'] ?? null,
+                    'Selected Block' => $data['selectedBlock'] ?? null,
+                    'Selected FPO' => $data['selectedFPO'] ?? null,
+                    'Selected FPO Address' => $data['selectedFpoAddress'] ?? null,
+                    'Address in MIS' => $data['addressInMis'] ?? null,
+                    'Correct Address' => $data['correctAddress'] ?? null,
+                    'Number of Shareholders' => $data['numberShareholders'] ?? null,
+                    'Shareholders Correct in MIS' => $data['shareholderCorrectInMis'] ?? null,
+                    'Correct Shareholders' => $data['correctShareholders'] ?? null,
+                    'CEO Name' => $data['ceoName'] ?? null,
+                    'Is CEO Correct' => $data['isCeoCorrect'] ?? null,
+                    'CEO Appointed' => $data['ceoAppointed'] ?? null,
+                    'Correct CEO' => $data['correctCeo'] ?? null,
+                    'Offer Letter CEO' => $data['offerLetterCeo'] ?? null,
+                    'Accountant Name' => $data['accountantName'] ?? null,
+                    'Is Correct Accountant' => $data['isCorrectAccountant'] ?? null,
+                    'Accountant Appointed' => $data['accountantAppointed'] ?? null,
+                    'Correct Accountant' => $data['correctAccountant'] ?? null,
+                    'Offer Letter Account' => $data['offerLetterAccount'] ?? null,
+                ];
+            }
+            return $detailData;
+        });
+
+        return $detailsWithForms;
+    }
+
+    /**
+     * @return array
+     */
+    public function headings(): array
+    {
+        return [
+            'Selected Expert',
+            'Inspection Date',
+            'Selected IA',
+            'Selected CBBO',
+            'Selected State',
+            'Selected District',
+            'Selected Block',
+            'Selected FPO',
+            'Selected FPO Address',
+            'Address in MIS',
+            'Correct Address',
+            'Number of Shareholders',
+            'Shareholders Correct in MIS',
+            'Correct Shareholders',
+            'CEO Name',
+            'Is CEO Correct',
+            'CEO Appointed',
+            'Correct CEO',
+            'Offer Letter CEO',
+            'Accountant Name',
+            'Is Correct Accountant',
+            'Accountant Appointed',
+            'Correct Accountant',
+            'Offer Letter Account',
+        ];
+    }
+}

@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Exports;
+
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Illuminate\Support\Collection;
+use App\Models\details;
+use App\Models\ExpertForm;
+
+class Expert implements FromCollection, WithHeadings
+{
+    public function collection()
+    {
+        // Fetching data from Details table where expert_id exists and hasConnectivity is true
+        $details = DB::table('fpo_details')
+            ->where('data', 'LIKE', '%"expert_id"%')
+            ->where('data', 'LIKE', '%"hasConnectivity"%')
+            ->distinct()
+            ->get();
+
+        // Mapping each detail to include related ExpertForm data
+        $detailsWithForms = $details->map(function ($detail) {
+            $data = json_decode($detail->data);
+            $expertId = $data->expert_id;
+            // Create an array with only the expert_id
+            $detailData = ['expert_id' => $expertId];
+            // Finding ExpertForm data based on expert_id
+            $expertForm = DB::table('expert_forms')->find($expertId);
+            // If ExpertForm exists, add its data to the array
+            if ($expertForm) {
+                $expertFormData = (array) $expertForm;
+                // Merge ExpertForm data with the existing array
+                $detailData = array_merge($detailData, $expertFormData);
+            }
+            return $detailData;
+        });
+
+        // Convert the collection to array before encoding to JSON
+        $detailsJson = $detailsWithForms->toArray();
+
+        // Encode the array to JSON format
+        $jsonResult = json_encode($detailsJson);
+
+        // Output the JSON result
+        echo $jsonResult;
+    }
+
+    public function headings(): array
+    {
+        return [
+            'Selected Expert',
+            'Inspection Date',
+            'Selected IA',
+            'Selected CBBO',
+            'Selected State',
+            'Selected District',
+            'Selected Block',
+            'Selected FPO',
+            'Selected FPO Address',
+            'Address in MIS',
+            'Correct Address',
+            'Number of Shareholders',
+            'Shareholders Correct in MIS',
+            'Correct Shareholders',
+            'CEO Name',
+            'Is CEO Correct',
+            'CEO Appointed',
+            'Correct CEO',
+            'Offer Letter CEO',
+            'Accountant Name',
+            'Is Correct Accountant',
+            'Accountant Appointed',
+            'Correct Accountant',
+            'Offer Letter Account',
+        ];
+    }
+}

@@ -1,0 +1,376 @@
+<?php
+
+namespace App\Exports;
+
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+
+use App\Models\details;
+use App\Models\expertform;
+
+class NewhasConnectivity implements FromCollection, WithHeadings
+{
+    public function collection()
+    {
+        $details = DB::table('fpo_details')
+            ->where(function ($query) {
+                $query->where('data', 'LIKE', '%"first_form"%')
+                    ->orWhere('data', 'LIKE', '%"expert_id"%');
+            })
+            ->where('data', 'LIKE', '%"hasConnectivity"%')
+            ->get();
+      
+
+        // Mapping each detail and decoding JSON data
+        $detailsWithForms = $details->map(function ($detail) {
+            $data = json_decode($detail->data, true);
+            $firstForm = $data['first_form'] ?? null;
+            $expertId = $data['expert_id'] ?? null;
+            $hasConnectivity = $data['hasConnectivity'] ?? null;
+
+            $expertForm = null;
+            $expertFormId = null;
+            $expertFormData = [];
+            if ($expertId) {
+                // Using the ExpertForm model to fetch data
+                $expertForm = ExpertForm::find($expertId);
+
+                if ($expertForm) {
+                    $expertFormId = $expertForm->id;
+                    $expertFormData = json_decode($expertForm->data, true) ?? [];
+                }
+            }
+            $selectedExpert = $firstForm['selectedExpert'] ?? $expertFormData['selectedExpert'] ?? null;
+            $inspectionDate = $firstForm['inspectionDate'] ?? $expertFormData['inspectionDate'] ?? null;
+            $selectedIA = $firstForm['selectedIA'] ?? $expertFormData['selectedIA'] ?? null;
+            $selectedCbbo = $firstForm['selectedCbbo'] ?? $expertFormData['selectedCbbo'] ?? null;
+            $selectedState = $firstForm['selectedState'] ?? $expertFormData['selectedState'] ?? null;
+            $selectedDistrict = $firstForm['selectedDistrict'] ?? $expertFormData['selectedDistrict'] ?? null;
+            $selectedBlock = $firstForm['selectedBlock'] ?? $expertFormData['selectedBlock'] ?? null;
+            $selectedFPO = $firstForm['selectedFPO'] ?? $expertFormData['selectedFPO'] ?? null;
+            $selectedFPOAddress = $firstForm['selectedFpoAddress'] ?? $expertFormData['selectedFpoAddress'] ?? null;
+            $addressInMIS = $firstForm['addressInMis'] ?? $expertFormData['addressInMis'] ?? null;
+            $correctAddress = $firstForm['correctAddress'] ?? $expertFormData['correctAddress'] ?? null;
+            $numberOfShareholders = $firstForm['numberShareholders'] ?? $expertFormData['numberShareholders'] ?? null;
+            $shareholdersCorrectInMIS = $firstForm['shareholderCorrectInMis'] ?? $expertFormData['shareholderCorrectInMis'] ?? null;
+            $ceoName = $firstForm['ceoName'] ?? $expertFormData['ceoName'] ?? null;
+            $isCeoCorrect = $firstForm['isCeoCorrect'] ?? $expertFormData['isCeoCorrect'] ?? null;
+            $offerLetterCeo = $firstForm['offerLetterCeo'] ?? $expertFormData['offerLetterCeo'] ?? null;
+            $accountantName = $firstForm['accountantName'] ?? $expertFormData['accountantName'] ?? null;
+            $isCorrectAccountant = $firstForm['isCorrectAccountant'] ?? $expertFormData['isCorrectAccountant'] ?? null;
+            $accountantAppointed = $firstForm['accountantAppointed'] ?? $expertFormData['accountantAppointed'] ?? null;
+            $offerLetterAccount = $firstForm['offerLetterAccount'] ?? $expertFormData['offerLetterAccount'] ?? null;
+
+            // Returning an array with all necessary fields from first_form and expert_id
+            return [
+                // Fields from first_form
+                'selectedExpert' => $selectedExpert,
+                'inspectionDate' => $inspectionDate,
+                'selectedIA' => $selectedIA,
+                'selectedCbbo' => $selectedCbbo,
+                'selectedState' => $selectedState,
+                'selectedDistrict' => $selectedDistrict,
+                'selectedBlock' => $selectedBlock,
+                'selectedFPO' => $selectedFPO,
+                'selectedFPOAddress' => $selectedFPOAddress,
+                'addressInMIS' => $addressInMIS,
+                'correctAddress' => $correctAddress,
+                'numberOfShareholders' => $numberOfShareholders,
+                'shareholdersCorrectInMIS' => $shareholdersCorrectInMIS,
+                'ceoName' => $ceoName,
+                'isCeoCorrect' => $isCeoCorrect,
+                'offerLetterCeo' => $offerLetterCeo,
+                'accountantName' => $accountantName,
+                'isCorrectAccountant' => $isCorrectAccountant,
+                'accountantAppointed' => $accountantAppointed,
+                'offerLetterAccount' => $offerLetterAccount,
+
+                // hasConnectivity field
+                'hasConnectivity' => $this->flattenArray($data['hasConnectivity'] ?? null),
+                'profileUpdatedOnMIS' => $this->flattenArray($data['profileUpdatedOnMIS'] ?? null),
+                'challengesFacedOnMIS' => $this->flattenArray($data['challengesFacedOnMIS'] ?? null),
+                'trainingsProvidedByCBBO' => $this->flattenArray($data['trainingsProvidedByCBBO'] ?? null),
+                'activitiesPerformed' => $this->flattenArray($data['activitiesPerformed'] ?? null),
+                'hasITIssue' => $this->flattenArray($data['hasITIssue'] ?? null),
+                'trainingsConductedByExpert' => $this->flattenArray($data['trainingsConductedByExpert'] ?? null),
+                'trainingActionPlan' => $this->flattenArray($data['trainingActionPlan'] ?? null),
+                'numberOfVisits' => $this->flattenArray($data['numberOfVisits'] ?? null),
+                'visitActionPlan' => $this->flattenArray($data['visitActionPlan'] ?? null),
+                'challenges' => $this->flattenArray($data['challenges'] ?? null),
+                'suggestions' => $this->flattenArray($data['suggestions'] ?? null),
+                'location' => $this->flattenArray($data['location'] ?? null),
+                'address' => $this->flattenArray($data['address'] ?? null),
+            ];
+        });
+
+        return $detailsWithForms;
+    }
+
+    private function flattenArray($value)
+    {
+        if (is_array($value)) {
+            return implode(', ', array_filter($value, function ($item) {
+                return !is_null($item) && $item !== '';
+            }));
+        }
+        return $value;
+    }
+
+    public function headings(): array
+    {
+        return [
+            // Headings for first_form fields
+            'Selected Expert',
+            'Inspection Date',
+            'Selected IA',
+            'Selected CBBO',
+            'Selected State',
+            'Selected District',
+            'Selected Block',
+            'Selected FPO',
+            'Selected FPO Address',
+            'Address in MIS',
+            'Correct Address',
+            'Number of Shareholders',
+            'Shareholders Correct in MIS',
+            'CEO Name',
+            'Is CEO Correct',
+            'Offer Letter CEO',
+            'Accountant Name',
+            'Is Correct Accountant',
+            'Accountant Appointed',
+            'Offer Letter Account',
+            // Heading for hasConnectivity
+            'Has Connectivity',
+            // Additional headings
+            'Profile Updated On MIS',
+            'Challenges Faced On MIS',
+            'Trainings Provided By CBBO',
+            'Activities Performed',
+            'Has IT Issue',
+            'Trainings Conducted By Expert',
+            'Training Action Plan',
+            'Number of Visits',
+            'Visit Action Plan',
+            'Challenges',
+            'Suggestions',
+            'Location',
+            'Address',
+        ];
+    }
+}
+
+
+
+// kkkkk
+<?php
+
+namespace App\Exports;
+
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Illuminate\Support\Collection;
+use App\Models\details;
+use App\Models\expertform;
+
+class NewkharifCrops implements FromCollection, WithHeadings
+{
+    /**
+     * @return \Illuminate\Support\Collection
+     */
+    public function collection()kharifCrops
+    {
+        $details = DB::table('fpo_details')
+            ->where(function ($query) {
+                $query->where('data', 'LIKE', '%"first_form"%')
+                    ->orWhere('data', 'LIKE', '%"expert_id"%');
+            })
+            ->where('data', 'LIKE', '%"kharifCrops"%')
+            ->get();
+
+
+        // Mapping each detail and decoding JSON data
+        $detailsWithForms = $details->map(function ($detail) {
+            $data = json_decode($detail->data, true);
+            $firstForm = $data['first_form'] ?? null;
+            $expertId = $data['expert_id'] ?? null;
+            $hasConnectivity = $data['kharifCrops'] ?? null;
+
+            $expertForm = null;
+            $expertFormId = null;
+            $expertFormData = [];
+
+            // Check if expert_id matches with ExpertForm model's id
+            if ($expertId) {
+                // Using the ExpertForm model to fetch data
+                $expertForm = ExpertForm::find($expertId);
+
+                if ($expertForm) {
+                    $expertFormId = $expertForm->id;
+                    $expertFormData = json_decode($expertForm->data, true) ?? [];
+                }
+            }
+
+            // If expert_id doesn't match with ExpertForm model's id, exclude hasConnectivity data
+            // if (!$expertId || !$expertForm) {
+            //     $hasConnectivity = null;
+            // }
+
+            $selectedExpert = $firstForm['selectedExpert'] ?? $expertFormData['selectedExpert'] ?? null;
+            $inspectionDate = $firstForm['inspectionDate'] ?? $expertFormData['inspectionDate'] ?? null;
+            $selectedIA = $firstForm['selectedIA'] ?? $expertFormData['selectedIA'] ?? null;
+            $selectedCbbo = $firstForm['selectedCbbo'] ?? $expertFormData['selectedCbbo'] ?? null;
+            $selectedState = $firstForm['selectedState'] ?? $expertFormData['selectedState'] ?? null;
+            $selectedDistrict = $firstForm['selectedDistrict'] ?? $expertFormData['selectedDistrict'] ?? null;
+            $selectedBlock = $firstForm['selectedBlock'] ?? $expertFormData['selectedBlock'] ?? null;
+            $selectedFPO = $firstForm['selectedFPO'] ?? $expertFormData['selectedFPO'] ?? null;
+            $selectedFPOAddress = $firstForm['selectedFpoAddress'] ?? $expertFormData['selectedFpoAddress'] ?? null;
+            $addressInMIS = $firstForm['addressInMis'] ?? $expertFormData['addressInMis'] ?? null;
+            $correctAddress = $firstForm['correctAddress'] ?? $expertFormData['correctAddress'] ?? null;
+            $numberOfShareholders = $firstForm['numberShareholders'] ?? $expertFormData['numberShareholders'] ?? null;
+            $shareholdersCorrectInMIS = $firstForm['shareholderCorrectInMis'] ?? $expertFormData['shareholderCorrectInMis'] ?? null;
+            $ceoName = $firstForm['ceoName'] ?? $expertFormData['ceoName'] ?? null;
+            $isCeoCorrect = $firstForm['isCeoCorrect'] ?? $expertFormData['isCeoCorrect'] ?? null;
+            $offerLetterCeo = $firstForm['offerLetterCeo'] ?? $expertFormData['offerLetterCeo'] ?? null;
+            $accountantName = $firstForm['accountantName'] ?? $expertFormData['accountantName'] ?? null;
+            $isCorrectAccountant = $firstForm['isCorrectAccountant'] ?? $expertFormData['isCorrectAccountant'] ?? null;
+            $accountantAppointed = $firstForm['accountantAppointed'] ?? $expertFormData['accountantAppointed'] ?? null;
+            $offerLetterAccount = $firstForm['offerLetterAccount'] ?? $expertFormData['offerLetterAccount'] ?? null;
+            // Converting arrays to strings
+            $kharifCrops = isset($data['kharifCrops']) ? implode(', ', (array) $data['kharifCrops']) : null;
+            $kharifFarmers = isset($data['kharifFarmers']) ? implode(', ', (array) $data['kharifFarmers']) : null;
+            $rabiCrops = isset($data['rabiCrops']) ? implode(', ', (array) $data['rabiCrops']) : null;
+            $rabiFarmers = isset($data['rabiFarmers']) ? implode(', ', (array) $data['rabiFarmers']) : null;
+            $zaidCrops = isset($data['zaidCrops']) ? implode(', ', (array) $data['zaidCrops']) : null;
+            $zaidFarmers = isset($data['zaidFarmers']) ? implode(', ', (array) $data['zaidFarmers']) : null;
+            $qualitySeedsSource = isset($data['qualitySeedsSource']) ? implode(', ', (array) $data['qualitySeedsSource']) : null;
+            $fertilisersSource = isset($data['fertilisersSource']) ? implode(', ', (array) $data['fertilisersSource']) : null;
+            $cropHusbandryActivities = isset($data['cropHusbandryActivities']) ? implode(', ', (array) $data['cropHusbandryActivities']) : null;
+            $suggestions = isset($data['suggestions']) ? implode(', ', (array) $data['suggestions']) : null;
+            $challenges = isset($data['challenges']) ? implode(', ', (array) $data['challenges']) : null;
+
+            // Returning an array with all necessary fields
+            return [
+                'selectedExpert' => $selectedExpert,
+                'inspectionDate' => $inspectionDate,
+                'selectedIA' => $selectedIA,
+                'selectedCbbo' => $selectedCbbo,
+                'selectedState' => $selectedState,
+                'selectedDistrict' => $selectedDistrict,
+                'selectedBlock' => $selectedBlock,
+                'selectedFPO' => $selectedFPO,
+                'selectedFPOAddress' => $selectedFPOAddress,
+                'addressInMIS' => $addressInMIS,
+                'correctAddress' => $correctAddress,
+                'numberOfShareholders' => $numberOfShareholders,
+                'shareholdersCorrectInMIS' => $shareholdersCorrectInMIS,
+                'ceoName' => $ceoName,
+                'isCeoCorrect' => $isCeoCorrect,
+                'offerLetterCeo' => $offerLetterCeo,
+                'accountantName' => $accountantName,
+                'isCorrectAccountant' => $isCorrectAccountant,
+                'accountantAppointed' => $accountantAppointed,
+                'offerLetterAccount' => $offerLetterAccount,
+
+                'kharifCrops' => $kharifCrops,
+                'kharifFarmers' => $kharifFarmers,
+                'rabiCrops' => $rabiCrops,
+                'rabiFarmers' => $rabiFarmers,
+                'zaidCrops' => $zaidCrops,
+                'zaidFarmers' => $zaidFarmers,
+                'hasQualitySeeds' => $data['hasQualitySeeds'] ?? null,
+                // 'qualitySeedsSource' => $data['qualitySeedsSource'] ?? null,
+                'qualitySeedsSource' => $qualitySeedsSource,
+                'hasFertilisers' => $data['hasFertilisers'] ?? null,
+                'fertilisersSource' => $fertilisersSource,
+                'hasPostHarvest' => $data['hasPostHarvest'] ?? null,
+                // 'postHarvestActivities' => $data['postHarvestActivities'] ?? null,
+                'isSortingChecked' => isset($data['postHarvestActivities']['isSortingChecked']) ? ($data['postHarvestActivities']['isSortingChecked'] ? 'true' : 'false') : 'false',
+                'isGradingChecked' => isset($data['postHarvestActivities']['isGradingChecked']) ? ($data['postHarvestActivities']['isGradingChecked'] ? 'true' : 'false') : 'false',
+                'isProcessingChecked' => isset($data['postHarvestActivities']['isProcessingChecked']) ? ($data['postHarvestActivities']['isProcessingChecked'] ? 'true' : 'false') : 'false',
+                'isStorageChecked' => isset($data['postHarvestActivities']['isStorageChecked']) ? ($data['postHarvestActivities']['isStorageChecked'] ? 'true' : 'false') : 'false',
+                'isTransportationChecked' => isset($data['postHarvestActivities']['isTransportationChecked']) ? ($data['postHarvestActivities']['isTransportationChecked'] ? 'true' : 'false') : 'false',
+                'isOthersChecked' => isset($data['postHarvestActivities']['isOthersChecked']) ? ($data['postHarvestActivities']['isOthersChecked'] ? 'true' : 'false') : 'false',
+
+                'otherHarvestInfra' => $data['otherHarvestInfra'] ?? null,
+                'hasIrrigation' => $data['hasIrrigation'] ?? 'null',
+                'isSprinklerChecked' => isset($data['irrigationDetails']['isSprinklerChecked']) ? ($data['irrigationDetails']['isSprinklerChecked'] ? 'true' : 'false') : 'false',
+                'isDripChecked' => isset($data['irrigationDetails']['isDripChecked']) ? ($data['irrigationDetails']['isDripChecked'] ? 'true' : 'false') : 'false',
+                'isFurrowChecked' => isset($data['irrigationDetails']['isFurrowChecked']) ? ($data['irrigationDetails']['isFurrowChecked'] ? 'true' : 'false') : 'false',
+                'isOtherIrrigationChecked' => isset($data['irrigationDetails']['isOtherIrrigationChecked']) ? ($data['irrigationDetails']['isOtherIrrigationChecked'] ? 'true' : 'false') : 'false',
+                'otherIrrigationType' => $data['otherIrrigationType'] ?? null,
+                'cropHusbandryActivities' => $cropHusbandryActivities,
+                'numberOfVisits' => $data['numberOfVisits'] ?? null,
+                'visitActionPlan' => $data['visitActionPlan'] ?? null,
+                'challenges' => $challenges,
+                'suggestions' => $suggestions,
+                'address' => $data['address'] ?? null,
+                'location' => $data['location'] ?? null,
+            ];
+        });
+
+        return $detailsWithForms;
+    }
+
+
+    public function headings(): array
+    {
+        return [
+
+            'selectedExpert',
+            'inspectionDate',
+            'selectedIA',
+            'selectedCbbo',
+            'selectedState',
+            'selectedDistrict',
+            'selectedBlock',
+            'selectedFPO',
+            'selectedFPOAddress',
+            'addressInMIS',
+            'numberOfShareholders',
+            'shareholdersCorrectInMIS',
+            'correctShareholders',
+            'ceoName',
+            'isCeoCorrect',
+            'offerLetterCeo',
+            'accountantName',
+            'isCorrectAccountant',
+            'offerLetterAccount',
+            "kharifCrops",
+            "kharifFarmers",
+            "rabiCrops",
+            "rabiFarmers",
+            "zaidCrops",
+            "zaidFarmers",
+            "hasQualitySeeds",
+            "qualitySeedsSource",
+            "hasFertilisers",
+            "fertilisersSource",
+            "hasPostHarvest",
+            // "postHarvestActivities",
+            "isSortingChecked",
+            "isGradingChecked",
+            "isProcessingChecked",
+            "isStorageChecked",
+            "isTransportationChecked",
+            "isOthersChecked",
+            "otherHarvestInfra",
+            "hasIrrigation",
+            "isSprinklerChecked",
+            "isDripChecked",
+            "isFurrowChecked",
+            "isOtherIrrigationChecked",
+            "otherIrrigationType",
+            "cropHusbandryActivities",
+            "numberOfVisits",
+            "visitActionPlan",
+            "challenges",
+            "suggestions",
+            "address",
+            "location",
+
+        ];
+    }
+}

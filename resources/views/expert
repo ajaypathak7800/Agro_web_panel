@@ -1,0 +1,108 @@
+<?php
+
+namespace App\Exports;
+
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Illuminate\Support\Collection;
+use App\Models\details;
+use App\Models\ExpertForm;
+
+class Expert implements FromCollection, WithHeadings
+{
+    /**
+     * @return \Illuminate\Support\Collection
+     */
+    public function collection()
+    {
+        // Fetching data from Details table where expert_id exists and hasConnectivity is true
+        $details = DB::table('fpo_details')
+            ->where('data', 'LIKE', '%"expert_id"%')
+            ->where('data', 'LIKE', '%"hasConnectivity"%')
+            ->distinct()
+            ->get();
+
+        $dataArray = [];
+
+        // Mapping each detail to include related ExpertForm data
+        foreach ($details as $detail) {
+            $data = json_decode($detail->data, true); // Decode JSON data as an associative array
+            $expertId = $data['expert_id'] ?? null;
+
+            // Finding ExpertForm data based on expert_id
+            $expertForm = ExpertForm::where('id', $expertId)->find($expertId);
+
+            if ($expertForm) {
+                $jsonColumnData = json_decode($expertForm->data, true);
+
+                // Check if the key 'selectedExpert' exists in the JSON data
+                if (isset($jsonColumnData['selectedExpert'])) {
+                    $dataArray[] = [
+                        'selectedExpert' => $jsonColumnData['selectedExpert'],
+                        'inspectionDate' => $jsonColumnData['inspectionDate'],
+                        'selectedIA' => $jsonColumnData['selectedIA'],
+                        'selectedCbbo' => $jsonColumnData['selectedCbbo'],
+                        'selectedState' => $jsonColumnData['selectedState'],
+                        'selectedDistrict' => $jsonColumnData['selectedDistrict'],
+                        'selectedBlock' => $jsonColumnData['selectedBlock'],
+                        'selectedFPO' => $jsonColumnData['selectedFPO'],
+                        'selectedFpoAddress' => $jsonColumnData['selectedFpoAddress'],
+                        'addressInMis' => $jsonColumnData['addressInMis'],
+                        'correctAddress' => isset($jsonColumnData['correctAddress']) ? $jsonColumnData['correctAddress'] : null,
+                        'numberShareholders' => $jsonColumnData['numberShareholders'],
+                        'shareholderCorrectInMis' => $jsonColumnData['shareholderCorrectInMis'],
+                        'correctShareholders' => isset($jsonColumnData['correctShareholders']) ? $jsonColumnData['correctShareholders'] : null,
+                        'ceoName' => $jsonColumnData['ceoName'],
+                        'isCeoCorrect' => $jsonColumnData['isCeoCorrect'],
+                        'ceoAppointed' => isset($jsonColumnData['ceoAppointed']) ? $jsonColumnData['ceoAppointed'] : null,
+                        'correctCeo' => isset($jsonColumnData['correctCeo']) ? $jsonColumnData['correctCeo'] : null,
+                        'offerLetterCeo' => $jsonColumnData['offerLetterCeo'],
+                        'accountantName' => $jsonColumnData['accountantName'],
+                        'isCorrectAccountant' => $jsonColumnData['isCorrectAccountant'],
+
+                        'accountantAppointed' => isset($jsonColumnData['accountantAppointed']) ? $jsonColumnData['accountantAppointed'] : null,
+                        'correctAccountant' => isset($jsonColumnData['correctAccountant']) ? $jsonColumnData['correctAccountant'] : null,
+                        'offerLetterAccount' => $jsonColumnData['offerLetterAccount'],
+                    ];
+                }
+            }
+        }
+
+        return collect($dataArray);
+    }
+
+    /**
+     * @return array
+     */
+    public function headings(): array
+    {
+        return [
+            'Exper_id',
+            'Selected Expert',
+            'Inspection Date',
+            'Selected IA',
+            'Selected CBBO',
+            'Selected State',
+            'Selected District',
+            'Selected Block',
+            'Selected FPO',
+            'Selected FPO Address',
+            'Address in MIS',
+            'Correct Address',
+            'Number of Shareholders',
+            'Shareholders Correct in MIS',
+            'Correct Shareholders',
+            'CEO Name',
+            'Is CEO Correct',
+            'CEO Appointed',
+            'Correct CEO',
+            'Offer Letter CEO',
+            'Accountant Name',
+            'Is Correct Accountant',
+            'Accountant Appointed',
+            'Correct Accountant',
+            'Offer Letter Account',
+        ];
+    }
+}
