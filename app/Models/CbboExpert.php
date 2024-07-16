@@ -10,6 +10,7 @@ class CbboExpert extends Model
     use HasFactory;
     protected $table = 'cbbo_experts';
     protected $fillable = [
+        'id',
         'ia_name',
         'cbbo_name',
 

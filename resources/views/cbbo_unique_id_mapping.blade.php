@@ -19,6 +19,10 @@
                                 <input type="file" name="file" class="form-control d-inline" style="width: auto; display: inline;">
                                 <button type="submit" class="btn btn-primary btn-round">Upload Excel</button>
                             </form>
+                            <a href="{{ route('exportCbboUniqueIdMapping') }}" <button class="button">
+ 
+</button>
+
                             <a href="{{ route('exportCbboUniqueIdMapping') }}" class="btn btn-success btn-round ms-auto">Export to Excel</a>
                         </div>
 

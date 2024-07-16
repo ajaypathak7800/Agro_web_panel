@@ -177,46 +177,133 @@ public function indexFPO()
     return view('fpo', compact('fpos'));
 }
 
-
 public function export()
 {
-    $fpos = DB::table('master')
-        
-            ->get(); 
-             session()->flash('success', 'File is being downloaded!');
+    try {
+        // Retrieve FPO data from the database
+        $fpos = DB::table('master')->get();
 
-    return Excel::download(new FpoExport($fpos), 'fpo.xlsx');
+        // Log the export action
+        $userId = session('ADMIN_ID');
+        DB::table('user_action_track')->insert([
+            'user_id' => $userId,
+            'activity_type' => 'export',
+            'action_table' => 'master', // Adjust based on your table or context
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Set a flash message for success
+        session()->flash('success', 'File is being downloaded!');
+
+        // Return the file download
+        return Excel::download(new FpoExport($fpos), 'fpo.xlsx');
+    } catch (\Exception $e) {
+        // Handle any exceptions during export
+        return redirect()->back()->with('error', 'Error exporting file: ' . $e->getMessage());
+    }
 }
 
 
 public function importFPO(Request $request)
 {
-    Excel::import(new FpoImport, $request->file('file')->store('temp'));
-    return redirect()->back()->with('success', 'Users imported successfully.');
+    // Validate the file and headings parameter
+    $request->validate([
+        'file' => 'required|mimes:csv,txt,xlsx,xls',
+     // Parameter to specify if the file has headings
+    ]);
+
+    try {
+        // Determine if the file has headings
+        $hasHeadingRow = $request->headings;
+
+        // Initialize the import class with the headings parameter
+        $importClass = new FpoImport($hasHeadingRow);
+
+        // Import data from the uploaded file
+        Excel::import($importClass, $request->file('file')->store('temp'));
+
+        // Log the import action
+        $userId = session('ADMIN_ID');
+        DB::table('user_action_track')->insert([
+            'user_id' => $userId,
+            'activity_type' => 'import',
+            'action_table' => 'MASTER', // Adjust based on your table name or context
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Users imported successfully.');
+    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+        $failures = $e->failures();
+        $errorMessages = '';
+        foreach ($failures as $failure) {
+            $errorMessages .= 'Row ' . $failure->row() . ': ' . implode(', ', $failure->errors()) . "\n";
+        }
+        return redirect()->back()->with('error', 'Validation errors: ' . $errorMessages);
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
+    }
 }
 
 public function importCbbo(Request $request)
 {
+    // Validate the file type
     $request->validate([
         'file' => 'required|mimes:xlsx,csv',
     ]);
 
-    Excel::import(new CbboExpertImport, $request->file('file')->store('temp'));
-    
+    try {
+        // Import data from the uploaded file
+        Excel::import(new CbboExpertImport, $request->file('file')->store('temp'));
 
-    return redirect()->back()->with('success', 'Users imported successfully.');
+        // Log the import action
+        $userId = session('ADMIN_ID');
+        DB::table('user_action_track')->insert([
+            'user_id' => $userId,
+            'activity_type' => 'import',
+            'action_table' => 'cbbo_expert',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->back()->with('success', 'Users imported successfully.');
+    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+        $failures = $e->failures();
+        $errorMessages = '';
+        foreach ($failures as $failure) {
+            $errorMessages .= 'Row ' . $failure->row() . ': ' . implode(', ', $failure->errors()) . "\n";
+        }
+        return redirect()->back()->with('error', 'Validation errors: ' . $errorMessages);
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
+    }
 }
 
 public function exportCbbo()
 {
-    
-        // Set a session variable for success message
+    try {
+        // Log the export action
+        $userId = session('ADMIN_ID');
+        DB::table('user_action_track')->insert([
+            'user_id' => $userId,
+            'activity_type' => 'export',
+            'action_table' => 'cbbo_expert',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Set a session flash message for success
         session()->flash('success', 'File is being downloaded!');
-    
+
         // Return the file download
         return Excel::download(new CbboExpertExport, 'cbbo_expert.xlsx');
+    } catch (\Exception $e) {
+        // Handle any exceptions during export
+        return redirect()->back()->with('error', 'Error exporting file: ' . $e->getMessage());
     }
-    
+}
+
 
     public function importExportView()
     {
@@ -337,23 +424,73 @@ public function exportb()
 {
     try {
         // Generate the download
-        return Excel::download(new CbboOfflineExport, 'cbbo_offline.xlsx')
-            ->with('success', 'File exported successfully!');
+        $file = Excel::download(new CbboOfflineExport, 'cbbo_offline.xlsx');
+
+        // Retrieve the user ID from the session
+        $userId = session('ADMIN_ID');
+
+        // Check if $userId is correctly retrieved
+        if (!$userId) {
+            throw new \Exception('User ID not found in session');
+        }
+
+        // Log the export action
+        DB::table('user_action_track')->insert([
+            'user_id' => $userId,
+            'activity_type' => 'export',
+            'action_table' => 'cbbo_offline',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $file;
     } catch (\Exception $e) {
         // Handle any exceptions during download
         return redirect()->back()->with('error', 'Error exporting file: ' . $e->getMessage());
     }
 }
+
 public function importb(Request $request)
 {
+    // Validate the file type
     $request->validate([
-        'file' => 'required|mimes:xlsx,xls',
+        'file' => 'required|mimes:csv,txt,xlsx,xls',
     ]);
 
-    Excel::import(new CbboOfflineImport, $request->file('file'));
+    try {
+        // Import data from the uploaded file
+        Excel::import(new CbboOfflineImport, $request->file('file'));
 
-    return redirect()->route('cbbo_offline')->with('success', 'Data imported successfully.');
+        // Retrieve the user ID from the session
+        $userId = session('ADMIN_ID');
+
+        // Check if $userId is correctly retrieved
+        if (!$userId) {
+            throw new \Exception('User ID not found in session');
+        }
+
+        // Log the import action
+        DB::table('user_action_track')->insert([
+            'user_id' => $userId,
+            'activity_type' => 'import',
+            'action_table' => 'cbbo_offline',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()->route('cbbo_offline')->with('success', 'Data imported successfully.');
+    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+        $failures = $e->failures();
+        $errorMessages = '';
+        foreach ($failures as $failure) {
+            $errorMessages .= 'Row ' . $failure->row() . ': ' . implode(', ', $failure->errors()) . "\n";
+        }
+        return redirect()->route('cbbo_offline')->with('error', 'Validation errors: ' . $errorMessages);
+    } catch (\Exception $e) {
+        return redirect()->route('cbbo_offline')->with('error', 'Error importing file: ' . $e->getMessage());
+    }
 }
+
 
 
 

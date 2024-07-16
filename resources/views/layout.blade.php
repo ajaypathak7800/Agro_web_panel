@@ -208,7 +208,12 @@
                   <ul class="nav nav-collapse">
                     <li>
                       <a  href="{{ route('import') }}">
-                        <span class="sub-item">Customer</span>
+                        <span class="sub-item">User Management</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a  href="{{ route('showLogs') }}">
+                        <span class="sub-item">User Track Activity</span>
                       </a>
                     </li>
                     

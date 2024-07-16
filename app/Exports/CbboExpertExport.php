@@ -17,20 +17,7 @@ class CbboExpertExport implements FromCollection, WithHeadings
     public function headings(): array
     {
         return [
-            'ID',
-            'IA Name',
-            'CBBO Name',
           
-            'CBBO Expert Name',
-            'CBBO Type',
-            'Designation',
-            'ED Qualification',
-            'Experience',
-            'State',
-            'Block',
-            'District',
-            'Contact No',
-            'Email ID',
         ];
     }
 }
