@@ -29,8 +29,8 @@
                                 </div>
                             @endif
 
-                            
-                            <div class="table-responsive" style="max-height: 550px; overflow: auto;">
+                      
+                            <div class="table-responsive" style="max-height: 500px; overflow: auto;">
             <table id="multi-filter-select" class="display table table-striped table-hover">
                 <thead>
                          

@@ -53,7 +53,10 @@ Route::post('import-cbbo-unique-id-mapping', [AdminController::class, 'importCbb
 
 Route::get('export-cbbo-unique-id-mapping', [AdminController::class, 'exportCbboUniqueIdMapping'])->name('exportCbboUniqueIdMapping');
 Route::get('cbbo-unique-id-mapping', [AdminController::class, 'showCbboUniqueIdMapping'])->name('showCbboUniqueIdMapping');
-
+//Routes for Fpo Details
+Route::post('import-fpo-details', [AdminController::class, 'importFpoDetails'])->name('importFpoDetails');
+Route::get('export-fpo-details', [AdminController::class, 'exportFpoDetails'])->name('exportFpoDetails');
+Route::get('FPOdetails', [AdminController::class, 'FPOdetails'])->name('FPOdetails');
     Route::get('/logout', function () {
         session()->forget('ADMIN_LOGIN');
         session()->forget('ADMIN_ID');

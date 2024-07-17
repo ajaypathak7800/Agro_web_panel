@@ -13,7 +13,7 @@ use App\Exports\FpoExport;
 use App\Models\Agricultural;
 use App\Exports\CbboOfflineExport;
 use App\Imports\CbboOfflineImport; 
-
+use App\Imports\FpoDetailsImport;
 use App\Imports\CbboExpertImport;
 use App\Exports\CbboExpertExport;
 use App\Imports\AgriculturalImport;
@@ -568,6 +568,54 @@ public function showCbboUniqueIdMapping()
     $data = DB::table('cbbo_unique_id_mapping')->get();
     return view('cbbo_unique_id_mapping', compact('data'));
 }
+
+//IMPORT FPO DETAILS
+public function importFpoDetails(Request $request)
+{
+    // Validate the file type
+    $request->validate([
+        'file' => 'required|mimes:xlsx,csv',
+    ]);
+
+    try {
+        // Import data from the uploaded file
+        Excel::import(new FpoDetailsImport, $request->file('file')->store('temp'));
+
+        // Log the import action
+        $userId = session('ADMIN_ID');
+        DB::table('user_action_track')->insert([
+            'user_id' => $userId,
+            'activity_type' => 'import',
+            'action_table' => 'fpo_details',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Return a response indicating success
+        return redirect()->back()->with('success', 'FPO details imported successfully.');
+    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+        // Handle validation errors
+        $failures = $e->failures();
+        $errorMessages = '';
+        foreach ($failures as $failure) {
+            $errorMessages .= 'Row ' . $failure->row() . ': ' . implode(', ', $failure->errors()) . "\n";
+        }
+        return redirect()->back()->with('error', 'Validation errors: ' . $errorMessages);
+    } catch (\Exception $e) {
+        // Log and handle other exceptions
+        Log::error('Error importing FPO detail: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
+    }
+}
+public function FPOdetails()
+{
+    // Fetch data or perform any necessary logic here
+    $fpoDetails =DB::table('fpo_details')->get();
+
+    // Return the view with data
+    return view('fpo_details', compact('fpoDetails'));
+}
+
 }
 
 

@@ -18,7 +18,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 use App\Exports\NewhasConnectivity;
 use App\Exports\NewSelectedGstReturn;
-use App\Exports\NewfromInputBusiness;
+use App\Exports\NewFromInputBusiness;
 use App\Exports\AwarenessProgram;
 use App\Exports\NewkharifCrops;
 
@@ -68,6 +68,7 @@ class DetailsController extends Controller
         return Excel::download(new NewSelectedGstReturn(), 'newselectedGstReturn.xlsx');
     }
 
+    
     public function newfromInputBusiness()
     {
         return Excel::download(new NewFromInputBusiness(), 'newfromInputBusiness.xlsx');

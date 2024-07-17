@@ -23,8 +23,9 @@
 
     <h3 class="mt-5">CBBO Offline Data Table</h3>
     <div class="container">
-    <table class="table table-bordered">
-        <thead>
+    <div class="table-responsive" style="max-height: 500px; overflow: auto;">
+            <table id="multi-filter-select" class="display table table-striped table-hover">
+                <thead>
             <tr>
                 <th>ID</th>
                 <th>Data</th>
